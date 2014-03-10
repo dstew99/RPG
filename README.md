@@ -13,8 +13,7 @@ For the character movement system, I'll through away the system Peter has, for t
 
 2- The system that Peter made is not as flexible and as complete as I would like it.
 
-So I decided that if I'm going to make a new system, I would make a new video tutorial series on it too. [Youtube List](http://www.youtube.com/playlist?list=PLtQmxXe8_uSbwmXAhVgBJ6FkVFmVJTM0E)
-Follow that tutorial because for this one I just simply import that character movement system and use it without explaining things about it.
+So I decided that if I'm going to make a new system, I would make a new video tutorial series on it too that you can find in [Youtube List](http://www.youtube.com/playlist?list=PLtQmxXe8_uSbwmXAhVgBJ6FkVFmVJTM0E). Follow that tutorial because for this one I just simply import that character movement system and use it without explaining things about it.
 
 The repository won't contain those materials that are commercial, like icons, character models and animations. If you are in game development, then you can simply pay a little money to buy them and then use them, if you don't want to pay, then go on and make them and don't ask me to share those materials because I will respect developers !
 
