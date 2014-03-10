@@ -17,6 +17,4 @@ So I decided that if I'm going to make a new system, I would make a new video tu
 
 The repository won't contain those materials that are commercial, like icons, character models and animations. If you are in game development, then you can simply pay a little money to buy them and then use them, if you don't want to pay, then go on and make them and don't ask me to share those materials because I will respect developers !
 
-Also, for property drawer collection that I would use in these series, take a look at [this link](https://github.com/anchan828/property-drawer-collection).
-
-I would go through few of them that I found useful in the video series.
+Also, for property drawer collection that I would use in these series, take a look at [this link](https://github.com/anchan828/property-drawer-collection). I would go through few of them that I found useful in the video series.
