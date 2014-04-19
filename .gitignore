@@ -6,3 +6,10 @@
 *.csproj
 *.unityproj
 *.sln
+*.suo
+RPG/Assets/{ASSETS}/
+RPG/Assets/{SCENES}/
+RPG/Assets/{RESOURCES}/
+RPG/Assets/{SCENES}.meta
+RPG/Assets/{RESOURCES}.meta
+RPG/Assets/{ASSETS}.meta
