@@ -8,8 +8,16 @@
 *.sln
 *.suo
 RPG/Assets/{ASSETS}/
+RPG/Assets/AssetStoreTools/
 RPG/Assets/{SCENES}/
 RPG/Assets/{RESOURCES}/
 RPG/Assets/{SCENES}.meta
 RPG/Assets/{RESOURCES}.meta
 RPG/Assets/{ASSETS}.meta
+RPG/ProjectSettings/QualitySettings.asset
+RPG/ProjectSettings/GraphicsSettings.asset
+RPG/Assets/{PREFABS}/mArcher.prefab.meta
+RPG/Assets/{PREFABS}/mArcher.prefab
+RPG/Assets/AssetStoreTools.meta
+RPG/Assets/{PREFABS}/Cube.prefab
+RPG/Assets/{PREFABS}/Cube.prefab.meta

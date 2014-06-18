@@ -1,39 +1,31 @@
 ﻿using UnityEngine;
 
-[System.Serializable]
-public class RPGCameraSettings
+[AddComponentMenu("RPG/Camera/TPS")]
+public class RPGCamera : MonoBehaviour
 {
     public float Distance = 5f;
     public float DistanceMax = 30f;
+    public float SafeMinDistance = 0.0501f;
     public float MouseSpeed = 8f;
     public float MouseScroll = 15f;
     public float MouseSmoothingFactor = 0.08f;
     public float CameraDistanceSpeed = 0.7f;
-    public float CameraBottomDistance = 1f;
+    public float CameraBottomDistance = 2f;
     public float FirstPersonThreshold = 0.8f;
     public float CharacterFadeThreshold = 1.8f;
     public float NormalFOV = 60f;
     public float SprintingFOV = 75f;
     public float FovDampingTime = 3f;
     public string PlayerTag = "Player";
-}
-
-[System.Serializable]
-public class RPGCameraAxises
-{
     public string MouseX = "Mouse X";
     public string MouseY = "Mouse Y";
     public string MouseWheel = "Mouse ScrollWheel";
     public string Horizontal = "Horizontal";
-}
 
-[AddComponentMenu("RPG/Camera/TPS")]
-public class RPGCamera : MonoBehaviour
-{
+
     public Transform CameraPivot;
-    public GameObject[] PlayerMesh;
-    public RPGCameraSettings Settings;
-    public RPGCameraAxises Axises;
+    public GameObject[] PlayerMesh = new GameObject[0];
+    
 
     #region private and static
 
@@ -52,6 +44,7 @@ public class RPGCamera : MonoBehaviour
     private float distanceVel;
     private bool camBottom;
     private bool constraint;
+    private bool initialized = false;
 
     private static float halfFieldOfView;
     private static float planeAspect;
@@ -60,63 +53,64 @@ public class RPGCamera : MonoBehaviour
 
     #endregion
 
-    void Awake()
+    public void Awake()
     {
         Instance = this;
     }
 
-    void Start()
+    public void Initialize()
     {
-        CameraSetup();
-        Settings.Distance = Mathf.Clamp(Settings.Distance, 0.0f, Settings.DistanceMax);
-        desiredDistance = Settings.Distance;
-        halfFieldOfView = (Camera.main.fieldOfView/2)*Mathf.Deg2Rad;
-        planeAspect = Camera.main.aspect;
-        halfPlaneHeight = Camera.main.nearClipPlane*Mathf.Tan(halfFieldOfView);
-        halfPlaneWidth = halfPlaneHeight*planeAspect;
-        mouseX = 0;
-        mouseY = 15;
+        if (CameraPivot != null)
+        {
+            Distance = Mathf.Clamp(Distance, 0.0f, DistanceMax);
+            desiredDistance = Distance;
+            halfFieldOfView = (Camera.main.fieldOfView/2)*Mathf.Deg2Rad;
+            planeAspect = Camera.main.aspect;
+            halfPlaneHeight = Camera.main.nearClipPlane*Mathf.Tan(halfFieldOfView);
+            halfPlaneWidth = halfPlaneHeight*planeAspect;
+            mouseX = 0;
+            mouseY = 15;
+            initialized = true;
+        }
     }
 
     void LateUpdate()
     {
-        if (CameraPivot == null)
-        {
-            Debug.LogError("No Camera Pivot found!");
+        if (CameraPivot == null || !initialized)
             return;
-        }
         GetInput();
         GetDesiredPosition();
         PositionUpdate();
-        CharacterFade();
+        if (PlayerMesh.Length != 0)
+            CharacterFade();
     }
 
     private void GetInput()
     {
-        if (Settings.Distance > 0.1)
+        if (Distance > 0.1)
         {
-            Debug.DrawLine(transform.position,transform.position - Vector3.up* Settings.CameraBottomDistance,Color.green);
+            Debug.DrawLine(transform.position,transform.position - Vector3.up* CameraBottomDistance,Color.green);
             camBottom = Physics.Linecast(transform.position,
-                transform.position - Vector3.up*Settings.CameraBottomDistance);
+                transform.position - Vector3.up*CameraBottomDistance);
         }
         bool constrainMouseY = camBottom && transform.position.y - CameraPivot.transform.position.y <= 0;
         if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
         {
             Screen.showCursor = false;
-            mouseX += Input.GetAxis(Axises.MouseX)*Settings.MouseSpeed;
+            mouseX += Input.GetAxis(MouseX)*MouseSpeed;
             if (constrainMouseY)
             {
-                if (Input.GetAxis(Axises.MouseY) < 0)
-                    mouseY -= Input.GetAxis(Axises.MouseY)*Settings.MouseSpeed;
+                if (Input.GetAxis(MouseY) < 0)
+                    mouseY -= Input.GetAxis(MouseY)*MouseSpeed;
             }
             else
-                mouseY -= Input.GetAxis(Axises.MouseY)*Settings.MouseSpeed;
+                mouseY -= Input.GetAxis(MouseY)*MouseSpeed;
         }
         else
             Screen.showCursor = true;
         mouseY = HELPER.ClampAngle(mouseY, mouseYMin, mouseYMax);
-        mouseXSmooth = Mathf.SmoothDamp(mouseXSmooth, mouseX, ref mouseXVel, Settings.MouseSmoothingFactor);
-        mouseYSmooth = Mathf.SmoothDamp(mouseYSmooth, mouseY, ref mouseYVel, Settings.MouseSmoothingFactor);
+        mouseXSmooth = Mathf.SmoothDamp(mouseXSmooth, mouseX, ref mouseXVel, MouseSmoothingFactor);
+        mouseYSmooth = Mathf.SmoothDamp(mouseYSmooth, mouseY, ref mouseYVel, MouseSmoothingFactor);
         if (constrainMouseY)
             mouseYMin = mouseY;
         else
@@ -127,55 +121,53 @@ public class RPGCamera : MonoBehaviour
                 Quaternion.Euler(RPGPlayerMotor.Instance.transform.eulerAngles.x,
                                 Camera.main.transform.eulerAngles.y,
                                 RPGPlayerMotor.Instance.transform.eulerAngles.z);
-        desiredDistance = desiredDistance - Input.GetAxis(Axises.MouseWheel)*Settings.MouseScroll;
-        if (desiredDistance > Settings.DistanceMax)
-            desiredDistance = Settings.DistanceMax;
-        if (desiredDistance < 0.05f)
-            desiredDistance = 0.05f;
+        desiredDistance = desiredDistance - Input.GetAxis(MouseWheel)*MouseScroll;
+        if (desiredDistance > DistanceMax)
+            desiredDistance = DistanceMax;
+        if (desiredDistance < SafeMinDistance)
+            desiredDistance = SafeMinDistance;
     }
 
     private void GetDesiredPosition()
     {
-        Settings.Distance = desiredDistance;
-        desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Settings.Distance);
+        Distance = desiredDistance;
+        desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Distance);
         float closestDistance;
         constraint = false;
         closestDistance = CheckCameraClipPlane(CameraPivot.position, desiredPosition);
         if (closestDistance != -1)
         {
-            Settings.Distance = closestDistance;
-            desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Settings.Distance);
+            Distance = closestDistance;
+            desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Distance);
             constraint = true;
         }
-        Settings.Distance -= Camera.main.nearClipPlane;
-        if (lastDistance < Settings.Distance || !constraint)
-            Settings.Distance = Mathf.SmoothDamp(lastDistance, Settings.Distance, ref distanceVel,
-                Settings.CameraDistanceSpeed);
-        if (Settings.Distance < 0.05f)
-            Settings.Distance = 0.05f;
-        lastDistance = Settings.Distance;
-        desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Settings.Distance);
+        Distance -= Camera.main.nearClipPlane;
+        if (lastDistance < Distance || !constraint)
+            Distance = Mathf.SmoothDamp(lastDistance, Distance, ref distanceVel,
+                CameraDistanceSpeed);
+        if (Distance < SafeMinDistance)
+            Distance = SafeMinDistance;
+        lastDistance = Distance;
+        desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Distance);
     }
 
     private void PositionUpdate()
     {
         transform.position = desiredPosition;
-        if (Settings.Distance > 0.05f)
+        if (Distance > SafeMinDistance - 0.0001f)
             transform.LookAt(CameraPivot);
     }
 
     private void CharacterFade()
     {
-        if (PlayerMesh.Length == 0)
-            return;
-        if (Settings.Distance < Settings.FirstPersonThreshold)
+        if (Distance < FirstPersonThreshold)
             foreach (var playerMesh in PlayerMesh)
                 playerMesh.renderer.enabled = false;
-        else if (Settings.Distance < Settings.CharacterFadeThreshold)
+        else if (Distance < CharacterFadeThreshold)
         {
             float charcaterAlpha = 1 -
-                                   (Settings.CharacterFadeThreshold - Settings.Distance)/
-                                   (Settings.CharacterFadeThreshold - Settings.FirstPersonThreshold);
+                                   (CharacterFadeThreshold - Distance)/
+                                   (CharacterFadeThreshold - FirstPersonThreshold);
             foreach (var playerMesh in PlayerMesh)
             {
                 playerMesh.renderer.enabled = true;
@@ -229,21 +221,21 @@ public class RPGCamera : MonoBehaviour
         Debug.DrawLine(from + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperRight, Color.cyan);
         Debug.DrawLine(from - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.LowerLeft, Color.cyan);
         Debug.DrawLine(from + transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.LowerRight, Color.cyan);
-        if (Physics.Linecast(from, to, out hitInfo) && hitInfo.collider.tag != Settings.PlayerTag)
+        if (Physics.Linecast(from, to, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             closestDistance = hitInfo.distance - Camera.main.nearClipPlane;
-        if (Physics.Linecast(from - transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != Settings.PlayerTag)
+        if (Physics.Linecast(from - transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             if (hitInfo.distance < closestDistance || closestDistance == -1)
                 closestDistance =
                     Vector3.Distance(hitInfo.point + transform.right*halfPlaneWidth - transform.up*halfPlaneHeight, from);
-        if (Physics.Linecast(from + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != Settings.PlayerTag)
+        if (Physics.Linecast(from + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             if (hitInfo.distance < closestDistance || closestDistance == -1)
                 closestDistance =
                     Vector3.Distance(hitInfo.point - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, from);
-        if (Physics.Linecast(from - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != Settings.PlayerTag)
+        if (Physics.Linecast(from - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             if (hitInfo.distance < closestDistance || closestDistance == -1)
                 closestDistance =
                     Vector3.Distance(hitInfo.point + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, from);
-        if (Physics.Linecast(from + transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != Settings.PlayerTag)
+        if (Physics.Linecast(from + transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             if (hitInfo.distance < closestDistance || closestDistance == -1)
                 closestDistance =
                     Vector3.Distance(hitInfo.point - transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, from);
@@ -270,36 +262,5 @@ public class RPGCamera : MonoBehaviour
         clipPlane.LowerRight -= transform.up * halfPlaneHeight;
         clipPlane.LowerRight += transform.forward * offset;
         return clipPlane;
-    }
-
-    public void CameraSetup()
-    {
-        GameObject cameraUsed;
-        GameObject cameraPivot;
-        RPGCamera cameraScript;
-        if (Camera.main != null)
-            cameraUsed = Camera.main.gameObject;
-        else
-        {
-            cameraUsed = new GameObject("Main Camera");
-            cameraUsed.AddComponent<Camera>();
-            cameraUsed.tag = "MainCamera";
-        }
-        if (!cameraUsed.GetComponent<RPGCamera>())
-            cameraUsed.AddComponent<RPGCamera>();
-        cameraScript = cameraUsed.GetComponent<RPGCamera>();
-        if (CameraPivot == null)
-        {
-            cameraPivot = GameObject.Find("Camera Pivot") as GameObject;
-            if (cameraPivot == null)
-            {
-                cameraPivot = new GameObject("Camera Pivot");
-                cameraPivot.transform.position = new Vector3(RPGPlayerMotor.Instance.gameObject.transform.position.x,
-                                                            RPGPlayerMotor.Instance.gameObject.transform.position.y + 1,
-                                                            RPGPlayerMotor.Instance.gameObject.transform.position.z);
-                cameraPivot.transform.parent = RPGPlayerMotor.Instance.gameObject.transform;
-            }
-            cameraScript.CameraPivot = cameraPivot.transform;
-        }
     }
 }

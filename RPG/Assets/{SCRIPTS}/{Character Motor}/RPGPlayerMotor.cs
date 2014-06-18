@@ -15,6 +15,7 @@ public class RPGPlayerMotor : MonoBehaviour
     public bool slideWhenOverSlopeLimit = true;
     public bool slideOnTaggedObjects = true;
     public float slideSpeed = 3.0f;
+    public int SlideSlope = 45;
     public bool airControl = false;
     public float antiBumpFactor = .75f;
     public int antiBunnyHopFactor = 1;
@@ -51,7 +52,7 @@ public class RPGPlayerMotor : MonoBehaviour
         myTransform = transform;
         speed = walkSpeed;
         rayDistance = controller.height * .5f + controller.radius;
-        slideLimit = controller.slopeLimit - .1f;
+        slideLimit = SlideSlope;
         jumpTimer = antiBunnyHopFactor;
     }
 
