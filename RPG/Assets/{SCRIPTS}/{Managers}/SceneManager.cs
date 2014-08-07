@@ -11,8 +11,11 @@ public class SceneManager : MonoBehaviour
     private bool Initialized = false;
     private GameObject pivot;
 
+    public static SceneManager Instance;
+
     void Start()
     {
+        Instance = this;
         if (!Initialized)
             Initialize();
     }

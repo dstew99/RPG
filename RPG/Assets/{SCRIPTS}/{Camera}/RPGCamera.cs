@@ -68,7 +68,7 @@ public class RPGCamera : MonoBehaviour
             planeAspect = Camera.main.aspect;
             halfPlaneHeight = Camera.main.nearClipPlane*Mathf.Tan(halfFieldOfView);
             halfPlaneWidth = halfPlaneHeight*planeAspect;
-            mouseX = 0;
+            mouseX = Quaternion.Angle(SceneManager.Instance.PlayerSpawnPoint.rotation,transform.rotation);
             mouseY = 15;
             initialized = true;
         }
