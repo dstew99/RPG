@@ -2,11 +2,16 @@
 
 [AddComponentMenu("RPG/Character/Player/Motor")]
 [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(PlayerInput))]
+[RequireComponent(typeof(RPGAnimator))]
 public class RPGPlayerMotor : MonoBehaviour
 {
 
     public float walkSpeed = 6.0f;
     public float runSpeed = 11.0f;
+    public float BackwardSpeed = 2f;
+    public  float SwimmingSpeed = 4;
     public bool limitDiagonalSpeed = true;
     public bool toggleRun = true;
     public float jumpSpeed = 8.0f;
@@ -15,15 +20,22 @@ public class RPGPlayerMotor : MonoBehaviour
     public bool slideWhenOverSlopeLimit = true;
     public bool slideOnTaggedObjects = true;
     public float slideSpeed = 3.0f;
+    public int SlideSlope = 45;
     public bool airControl = false;
     public float antiBumpFactor = .75f;
     public int antiBunnyHopFactor = 1;
 
-    public string ForwardAxis = "Horizontal";
-    public string StrafeAxis = "Vertical";
+    public string ForwardAxis = "Vertical";
+    public string StrafeAxis = "Horizontal";
     public string RunAxis = "Run";
-    public string JumpAxis = "Jump";
+    //public string JumpAxis = "Jump";
     public string SlidingTag = "Slide";
+
+    public bool IsSwimming { get; set; }
+    public bool InCliffRange { get; set; }
+    public bool InCliffAnimation { get; set; }
+    public bool DoCliffAnimation { get; set; }
+    public Vector3 MoveDirection { get; set; }
 
     private Vector3 moveDirection = Vector3.zero;
     private bool grounded = false;
@@ -38,6 +50,8 @@ public class RPGPlayerMotor : MonoBehaviour
     private Vector3 contactPoint;
     private bool playerControl = false;
     private int jumpTimer;
+    private bool running;
+
     public static RPGPlayerMotor Instance;
 
     void Awake()
@@ -51,18 +65,18 @@ public class RPGPlayerMotor : MonoBehaviour
         myTransform = transform;
         speed = walkSpeed;
         rayDistance = controller.height * .5f + controller.radius;
-        slideLimit = controller.slopeLimit - .1f;
+        slideLimit = SlideSlope;
         jumpTimer = antiBunnyHopFactor;
     }
 
     void FixedUpdate()
     {
-        float inputX = Input.GetAxis(ForwardAxis);
-        float inputY = Input.GetAxis(StrafeAxis);
+        float inputY = Input.GetAxis(ForwardAxis);
+        float inputX = Input.GetAxis(StrafeAxis);
         // If both horizontal and vertical are used simultaneously, limit speed (if allowed), so the total doesn't exceed normal move speed
         float inputModifyFactor = (inputX != 0.0f && inputY != 0.0f && limitDiagonalSpeed) ? .7071f : 1.0f;
 
-        if (grounded)
+        if (grounded || IsSwimming)
         {
             bool sliding = false;
             // See if surface immediately below should be slid down. We use this normally rather than a ControllerColliderHit point,
@@ -111,9 +125,9 @@ public class RPGPlayerMotor : MonoBehaviour
             }
 
             // Jump! But only if the jump button has been released and player has been grounded for a given number of frames
-            if (!Input.GetButton(JumpAxis))
+            if (!Input.GetKeyDown(PlayerInput.Instance.Jump))
                 jumpTimer++;
-            else if (jumpTimer >= antiBunnyHopFactor)
+            else if (jumpTimer >= antiBunnyHopFactor && !DoCliffAnimation)
             {
                 moveDirection.y = jumpSpeed;
                 jumpTimer = 0;
@@ -122,14 +136,14 @@ public class RPGPlayerMotor : MonoBehaviour
         else
         {
             // If we stepped over a cliff or something, set the height at which we started falling
-            if (!falling)
+            if (!falling && !IsSwimming && !InCliffAnimation)
             {
                 falling = true;
                 fallStartLevel = myTransform.position.y;
             }
 
             // If air control is allowed, check movement but don't touch the y component
-            if (airControl && playerControl)
+            if (airControl && playerControl && !InCliffAnimation)
             {
                 moveDirection.x = inputX * speed * inputModifyFactor;
                 moveDirection.z = inputY * speed * inputModifyFactor;
@@ -138,18 +152,40 @@ public class RPGPlayerMotor : MonoBehaviour
         }
 
         // Apply gravity
-        moveDirection.y -= gravity * Time.deltaTime;
-
+        if ( !IsSwimming && !InCliffAnimation)
+            moveDirection.y -= gravity * Time.deltaTime;
         // Move the controller, and set grounded true or false depending on whether we're standing on something
-        grounded = (controller.Move(moveDirection * Time.deltaTime) & CollisionFlags.Below) != 0;
+        if ( !IsSwimming && !InCliffAnimation)
+            grounded = (controller.Move(moveDirection * Time.deltaTime) & CollisionFlags.Below) != 0;
+        else if (!InCliffAnimation && IsSwimming)
+        {
+            moveDirection.y = 0;
+            controller.Move(moveDirection * Time.deltaTime);
+        }
     }
 
     void Update()
     {
         // If the run button is set to toggle, then switch between walk/run speed. (We use Update for this...
         // FixedUpdate is a poor place to use GetButtonDown, since it doesn't necessarily run every frame and can miss the event)
+        if ( !running )
+            speed = walkSpeed;
+        else
+        {
+            speed = runSpeed;
+        }
         if (toggleRun && grounded && Input.GetButtonDown(RunAxis))
+        {
             speed = (speed == walkSpeed ? runSpeed : walkSpeed);
+            running = !running;
+        }
+        if ( Input.GetAxis(ForwardAxis) < 0 )
+            speed = BackwardSpeed;
+        if ( IsSwimming )
+            speed = SwimmingSpeed;
+        RPGAnimator.Instance.WalkSpeed = Input.GetAxis(ForwardAxis) * speed;
+        RPGAnimator.Instance.StrafeSpeed = Input.GetAxis(StrafeAxis);
+        MoveDirection = moveDirection;
     }
 
     // Store point that we're in contact with for use in FixedUpdate if needed
@@ -158,10 +194,17 @@ public class RPGPlayerMotor : MonoBehaviour
         contactPoint = hit.point;
     }
 
-    // If falling damage occured, this is the place to do something about it. You can make the player
-    // have hitpoints and remove some of them based on the distance fallen, add sound effects, etc.
+    // If falling damage occurred, this is the place to do something about it. You can make the player
+    // have hit points and remove some of them based on the distance fallen, add sound effects, etc.
     void FallingDamageAlert(float fallDistance)
     {
         print("Ouch! Fell " + fallDistance + " units!");
+    }
+
+    public void ResetMoveVector()
+    {
+        moveDirection = Vector3.zero;
+        if ( IsSwimming )
+            speed = SwimmingSpeed;
     }
 }
