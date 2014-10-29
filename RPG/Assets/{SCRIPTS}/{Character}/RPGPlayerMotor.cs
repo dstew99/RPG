@@ -11,7 +11,7 @@ public class RPGPlayerMotor : MonoBehaviour
     public float walkSpeed = 6.0f;
     public float runSpeed = 11.0f;
     public float BackwardSpeed = 2f;
-    public  float SwimmingSpeed = 4;
+    public float SwimmingSpeed = 4;
     public bool limitDiagonalSpeed = true;
     public bool toggleRun = true;
     public float jumpSpeed = 8.0f;
@@ -69,7 +69,7 @@ public class RPGPlayerMotor : MonoBehaviour
         jumpTimer = antiBunnyHopFactor;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         float inputY = Input.GetAxis(ForwardAxis);
         float inputX = Input.GetAxis(StrafeAxis);
@@ -152,11 +152,15 @@ public class RPGPlayerMotor : MonoBehaviour
         }
 
         // Apply gravity
-        if ( !IsSwimming && !InCliffAnimation)
+        if (!IsSwimming && !InCliffAnimation)
+        {
             moveDirection.y -= gravity * Time.deltaTime;
-        // Move the controller, and set grounded true or false depending on whether we're standing on something
-        if ( !IsSwimming && !InCliffAnimation)
+
+            // Move the controller, and set grounded true or false depending on whether we're standing on something
+
             grounded = (controller.Move(moveDirection * Time.deltaTime) & CollisionFlags.Below) != 0;
+        }
+
         else if (!InCliffAnimation && IsSwimming)
         {
             moveDirection.y = 0;
@@ -168,20 +172,15 @@ public class RPGPlayerMotor : MonoBehaviour
     {
         // If the run button is set to toggle, then switch between walk/run speed. (We use Update for this...
         // FixedUpdate is a poor place to use GetButtonDown, since it doesn't necessarily run every frame and can miss the event)
-        if ( !running )
-            speed = walkSpeed;
-        else
-        {
-            speed = runSpeed;
-        }
+        speed = running ? runSpeed : walkSpeed;
         if (toggleRun && grounded && Input.GetButtonDown(RunAxis))
         {
             speed = (speed == walkSpeed ? runSpeed : walkSpeed);
             running = !running;
         }
-        if ( Input.GetAxis(ForwardAxis) < 0 )
+        if (Input.GetAxis(ForwardAxis) < 0)
             speed = BackwardSpeed;
-        if ( IsSwimming )
+        if (IsSwimming)
             speed = SwimmingSpeed;
         RPGAnimator.Instance.WalkSpeed = Input.GetAxis(ForwardAxis) * speed;
         RPGAnimator.Instance.StrafeSpeed = Input.GetAxis(StrafeAxis);
@@ -196,7 +195,7 @@ public class RPGPlayerMotor : MonoBehaviour
 
     // If falling damage occurred, this is the place to do something about it. You can make the player
     // have hit points and remove some of them based on the distance fallen, add sound effects, etc.
-    void FallingDamageAlert(float fallDistance)
+    static void FallingDamageAlert(float fallDistance)
     {
         print("Ouch! Fell " + fallDistance + " units!");
     }
@@ -204,7 +203,7 @@ public class RPGPlayerMotor : MonoBehaviour
     public void ResetMoveVector()
     {
         moveDirection = Vector3.zero;
-        if ( IsSwimming )
+        if (IsSwimming)
             speed = SwimmingSpeed;
     }
 }

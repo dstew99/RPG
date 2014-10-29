@@ -33,11 +33,11 @@ public class RPGCamera : MonoBehaviour
     private Vector3 desiredPosition;
     private float desiredDistance;
     private float lastDistance;
-    private float mouseX = 0;
-    private float mouseXSmooth = 0;
+    private float mouseX;
+    private float mouseXSmooth;
     private float mouseXVel;
-    private float mouseY = 0;
-    private float mouseYSmooth = 0;
+    private float mouseY;
+    private float mouseYSmooth;
     private float mouseYVel;
     private float mouseYMin = -89.5f;
     private float mouseYMax = 89.5f;
@@ -93,14 +93,14 @@ public class RPGCamera : MonoBehaviour
             camBottom = Physics.Linecast(transform.position,
                 transform.position - Vector3.up*CameraBottomDistance);
         }
-        bool constrainMouseY = camBottom && transform.position.y - CameraPivot.transform.position.y <= 0;
+        bool constrainMouseY = camBottom && transform.position.y - CameraPivot.transform.position.y <= 0f;
         if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
         {
             Screen.showCursor = false;
             mouseX += Input.GetAxis(MouseX)*MouseSpeed;
             if (constrainMouseY)
             {
-                if (Input.GetAxis(MouseY) < 0)
+                if (Input.GetAxis(MouseY) < 0f)
                     mouseY -= Input.GetAxis(MouseY)*MouseSpeed;
             }
             else
@@ -132,10 +132,9 @@ public class RPGCamera : MonoBehaviour
     {
         Distance = desiredDistance;
         desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Distance);
-        float closestDistance;
         constraint = false;
-        closestDistance = CheckCameraClipPlane(CameraPivot.position, desiredPosition);
-        if (closestDistance != -1)
+        float closestDistance = CheckCameraClipPlane(CameraPivot.position, desiredPosition);
+        if (closestDistance != -1f)
         {
             Distance = closestDistance;
             desiredPosition = GetCameraPosition(mouseYSmooth, mouseXSmooth, Distance);
@@ -165,17 +164,17 @@ public class RPGCamera : MonoBehaviour
                 playerMesh.renderer.enabled = false;
         else if (Distance < CharacterFadeThreshold)
         {
-            float charcaterAlpha = 1 -
+            var characterAlpha = 1f -
                                    (CharacterFadeThreshold - Distance)/
                                    (CharacterFadeThreshold - FirstPersonThreshold);
             foreach (var playerMesh in PlayerMesh)
             {
                 playerMesh.renderer.enabled = true;
-                if (playerMesh.renderer.material.color.a != charcaterAlpha)
+                if (playerMesh.renderer.material.color.a != characterAlpha)
                     playerMesh.renderer.material.color = new Color(playerMesh.renderer.material.color.r,
                                                                     playerMesh.renderer.material.color.g,
                                                                     playerMesh.renderer.material.color.b,
-                                                                    charcaterAlpha);
+                                                                    characterAlpha);
             }
         }
         else
@@ -183,7 +182,7 @@ public class RPGCamera : MonoBehaviour
             foreach (var playerMesh in PlayerMesh)
             {
                 playerMesh.renderer.enabled = true;
-                if (playerMesh.renderer.material.color.a != 1)
+                if (playerMesh.renderer.material.color.a != 1f)
                     playerMesh.renderer.material.color = new Color(playerMesh.renderer.material.color.r,
                                                                     playerMesh.renderer.material.color.g,
                                                                     playerMesh.renderer.material.color.b,
@@ -194,12 +193,12 @@ public class RPGCamera : MonoBehaviour
 
     private Vector3 GetCameraPosition(float xAxis, float yAxis, float distance)
     {
-        Vector3 offset = new Vector3(0, 0, -distance);
-        Quaternion rotation = Quaternion.Euler(xAxis, yAxis, 0);
-        return CameraPivot.position + rotation*offset;
+        var rotationEuler = Quaternion.Euler(xAxis, yAxis, 0);
+        var positionOffset = new Vector3(0, 0, -distance);
+        return CameraPivot.position + rotationEuler*positionOffset;  //Should meke vars or just inline? Don't know what's more efficient
     }
 
-    public struct ClipPlabeVertices
+    public struct ClipPlaneVertices
     {
         public Vector3 UpperLeft;
         public Vector3 UpperRight;
@@ -211,7 +210,7 @@ public class RPGCamera : MonoBehaviour
     {
         var closestDistance = -1f;
         RaycastHit hitInfo;
-        ClipPlabeVertices clipPlane = GetClipPlaneAt(to);
+        ClipPlaneVertices clipPlane = GetClipPlaneAt(to);
         Debug.DrawLine(clipPlane.UpperLeft,clipPlane.UpperRight);
         Debug.DrawLine(clipPlane.UpperRight,clipPlane.LowerRight);
         Debug.DrawLine(clipPlane.LowerRight,clipPlane.LowerLeft);
@@ -223,44 +222,48 @@ public class RPGCamera : MonoBehaviour
         Debug.DrawLine(from + transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.LowerRight, Color.cyan);
         if (Physics.Linecast(from, to, out hitInfo) && hitInfo.collider.tag != PlayerTag)
             closestDistance = hitInfo.distance - Camera.main.nearClipPlane;
+        #region Don't like this. It's ... icky
+
         if (Physics.Linecast(from - transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
-            if (hitInfo.distance < closestDistance || closestDistance == -1)
+            if (hitInfo.distance < closestDistance || closestDistance == -1f)
                 closestDistance =
                     Vector3.Distance(hitInfo.point + transform.right*halfPlaneWidth - transform.up*halfPlaneHeight, from);
         if (Physics.Linecast(from + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
-            if (hitInfo.distance < closestDistance || closestDistance == -1)
+            if (hitInfo.distance < closestDistance || closestDistance == -1f)
                 closestDistance =
                     Vector3.Distance(hitInfo.point - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, from);
         if (Physics.Linecast(from - transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
-            if (hitInfo.distance < closestDistance || closestDistance == -1)
+            if (hitInfo.distance < closestDistance || closestDistance == -1f)
                 closestDistance =
                     Vector3.Distance(hitInfo.point + transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, from);
         if (Physics.Linecast(from + transform.right * halfPlaneWidth - transform.up * halfPlaneHeight, clipPlane.UpperLeft, out hitInfo) && hitInfo.collider.tag != PlayerTag)
-            if (hitInfo.distance < closestDistance || closestDistance == -1)
+            if (hitInfo.distance < closestDistance || closestDistance == -1f)
                 closestDistance =
                     Vector3.Distance(hitInfo.point - transform.right * halfPlaneWidth + transform.up * halfPlaneHeight, from);
+        #endregion
+
         return closestDistance;
     }
 
-    private ClipPlabeVertices GetClipPlaneAt(Vector3 pos)
+    private static ClipPlaneVertices GetClipPlaneAt(Vector3 pos)
     {
-        var clipPlane = new ClipPlabeVertices();
+        var clipPlane = new ClipPlaneVertices();
         if (Camera.main == null)
             return clipPlane;
-        Transform transform = Camera.main.transform;
-        float offset = Camera.main.nearClipPlane;
+        var transform = Camera.main.transform;
+        var nearClipPlaneOffset = Camera.main.nearClipPlane;
         clipPlane.UpperLeft = pos - transform.right*halfPlaneWidth;
         clipPlane.UpperLeft += transform.up*halfPlaneHeight;
-        clipPlane.UpperLeft += transform.forward*offset;
+        clipPlane.UpperLeft += transform.forward*nearClipPlaneOffset;
         clipPlane.UpperRight = pos + transform.right * halfPlaneWidth;
         clipPlane.UpperRight += transform.up * halfPlaneHeight;
-        clipPlane.UpperRight += transform.forward * offset;
+        clipPlane.UpperRight += transform.forward * nearClipPlaneOffset;
         clipPlane.LowerLeft = pos - transform.right * halfPlaneWidth;
         clipPlane.LowerLeft -= transform.up * halfPlaneHeight;
-        clipPlane.LowerLeft += transform.forward * offset;
+        clipPlane.LowerLeft += transform.forward * nearClipPlaneOffset;
         clipPlane.LowerRight = pos + transform.right * halfPlaneWidth;
         clipPlane.LowerRight -= transform.up * halfPlaneHeight;
-        clipPlane.LowerRight += transform.forward * offset;
+        clipPlane.LowerRight += transform.forward * nearClipPlaneOffset;
         return clipPlane;
     }
 }

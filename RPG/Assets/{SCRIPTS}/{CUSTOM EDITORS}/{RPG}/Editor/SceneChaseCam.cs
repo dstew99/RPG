@@ -42,13 +42,11 @@ public class SceneChaseCam : EditorWindow
     void Update()
     {
         // must be active, playing and following some object
-        if (active && Application.isPlaying && toFollow != null)
+        if (!active || !Application.isPlaying || toFollow == null) return;
+        foreach (SceneView scene in SceneView.sceneViews)
         {
-            foreach (SceneView scene in SceneView.sceneViews)
-            {
-                scene.pivot = toFollow.position;
-                scene.Repaint();
-            }
+            scene.pivot = toFollow.position;
+            scene.Repaint();
         }
     }
 }

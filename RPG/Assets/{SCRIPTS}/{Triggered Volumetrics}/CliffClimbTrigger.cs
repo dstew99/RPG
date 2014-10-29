@@ -69,16 +69,13 @@ public class CliffClimbTrigger : MonoBehaviour
     {
         if (!InRange)
             return;
-        float distance = float.PositiveInfinity;
-        float tmp;
+        float positiveInfinity = float.PositiveInfinity;
         foreach ( var anchor in Anchors )
         {
-            tmp = Vector3.Distance(RPGPlayerMotor.Instance.transform.position , anchor.transform.position);
-            if ( tmp < distance )
-            {
-                Anchor = anchor.gameObject;
-                distance = tmp;
-            }
+            var tempDistance = Vector3.Distance(RPGPlayerMotor.Instance.transform.position , anchor.transform.position);
+            if (!(tempDistance < positiveInfinity)) continue;
+            Anchor = anchor.gameObject;
+            positiveInfinity = tempDistance;
         }
     }
 

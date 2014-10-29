@@ -29,7 +29,7 @@ public class AnchorPoint : MonoBehaviour
 
     #region Private Variables
 
-    private Color sphereColor = new Color(0 , 0 , 0 , 0.1f);
+    private readonly Color sphereColor = new Color(0 , 0 , 0 , 0.1f);
 
     #endregion
 

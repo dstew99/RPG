@@ -14,19 +14,29 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+#region Documentation
+/// <summary>   A control points. </summary>
+///
+/// <remarks>   Dave, 10/26/2014. </remarks>
+#endregion
+
 public class ControlPoints : MonoBehaviour
 {
     #region Public Variables
 
+    /// <summary>   Size of the gizmo. </summary>
     public float gizmoSize = 0.5f;
+    /// <summary>   The sphere scale. </summary>
     public float SphereScale = 0.1f;
+    /// <summary>   true to sphere point. </summary>
     public bool SpherePoint = true;
 
     #endregion
 
     #region Private Variables
 
-    private Color sphereColor = new Color(0 , 0 , 0 , 0.1f);
+    /// <summary>   The sphere color. </summary>
+    private readonly Color sphereColor = new Color(0 , 0 , 0 , 0.1f);
 
     #endregion
 
@@ -35,6 +45,12 @@ public class ControlPoints : MonoBehaviour
     #endregion
 
     #region Private Methods
+
+    #region Documentation
+    /// <summary>   Executes the draw gizmos action. </summary>
+    ///
+    /// <remarks>   Dave, 10/26/2014. </remarks>
+    #endregion
 
     private void OnDrawGizmos()
     {
